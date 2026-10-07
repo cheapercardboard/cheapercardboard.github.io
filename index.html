@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>MTG Sealed Prices</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 46rem; margin: 0 auto; padding: 1rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.1rem; margin: 2rem 0 .4rem; }
+  #meta { margin: 0 0 1rem; opacity: .75; }
+  #notice { padding: .5rem .75rem; border: 1px solid currentColor; margin: 0 0 1rem; }
+  #q { width: 100%; box-sizing: border-box; padding: .5rem; font: inherit; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: .3rem .6rem .3rem 0; border-bottom: 1px solid rgba(128,128,128,.35); }
+  td.price { font-variant-numeric: tabular-nums; }
+  tr.best td { font-weight: 700; }
+  tr.out td { opacity: .55; }
+  footer { margin-top: 2.5rem; opacity: .75; font-size: .9rem; }
+</style>
+</head>
+<body>
+<h1>MTG Sealed Prices</h1>
+<p id="meta"></p>
+<p id="notice" hidden>Sample data only. These are placeholder stores and prices, not real listings.</p>
+<label for="q" hidden>Filter products</label>
+<input id="q" type="search" placeholder="Filter products, e.g. &quot;commander&quot; or &quot;play booster&quot;">
+<main id="list"></main>
+<footer>Prices are collected automatically and may be out of date. Check the store's page before you buy.</footer>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  var data = window.PRICES || { products: [] };
+  var list = document.getElementById("list");
+  var q = document.getElementById("q");
+
+  document.getElementById("meta").textContent =
+    data.products.length + " products" + (data.updated ? " · last updated " + data.updated : "");
+  if (data.sample) document.getElementById("notice").hidden = false;
+
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : null; }
+  function el(tag, text) { var e = document.createElement(tag); if (text !== undefined) e.textContent = text; return e; }
+
+  function sortOffers(offers) {
+    return offers.slice().sort(function (a, b) {
+      if (a.in_stock !== b.in_stock) return a.in_stock ? -1 : 1;
+      return a.price - b.price;
+    });
+  }
+
+  function render(filter) {
+    list.textContent = "";
+    var words = filter.toLowerCase().split(/\s+/).filter(Boolean);
+    var shown = 0;
+    data.products.forEach(function (p) {
+      var name = p.name.toLowerCase();
+      if (!words.every(function (w) { return name.indexOf(w) !== -1; })) return;
+      shown++;
+      var sec = el("section");
+      sec.appendChild(el("h2", p.name));
+      var wrap = el("div"); wrap.className = "table-wrap";
+      var t = el("table");
+      var head = el("tr");
+      ["Store", "Price", "Stock", "Link"].forEach(function (h) { head.appendChild(el("th", h)); });
+      t.appendChild(head);
+      var best = true;
+      sortOffers(p.offers).forEach(function (o) {
+        var tr = el("tr");
+        if (o.in_stock && best) { tr.className = "best"; best = false; }
+        if (!o.in_stock) tr.className = "out";
+        tr.appendChild(el("td", o.store));
+        var price = el("td", "$" + Number(o.price).toFixed(2)); price.className = "price";
+        tr.appendChild(price);
+        tr.appendChild(el("td", o.in_stock ? "In stock" : "Sold out"));
+        var linkCell = el("td"), href = safeUrl(o.url);
+        if (href) {
+          var a = el("a", "View"); a.href = href; a.rel = "noopener"; a.target = "_blank";
+          linkCell.appendChild(a);
+        }
+        tr.appendChild(linkCell);
+        t.appendChild(tr);
+      });
+      wrap.appendChild(t); sec.appendChild(wrap); list.appendChild(sec);
+    });
+    if (!shown) list.appendChild(el("p", "No products match that filter."));
+  }
+
+  q.addEventListener("input", function () { render(q.value); });
+  render("");
+})();
+</script>
+</body>
+</html>
