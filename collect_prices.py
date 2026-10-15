@@ -83,8 +83,11 @@ def sealed_collections(site, agent):
     picks = []
     for c in data:
         text = (c.get("title", "") + " " + c.get("handle", "")).lower()
-        if c.get("products_count") == 0:
+        count = c.get("products_count")
+        if count == 0:
             continue
+        if count and count > 1200 and not re.search(r"\bsealed\b", text):
+            continue  # a very large collection named "Commander" or "Collector" is almost always single cards
         if any(w in text for w in COLL_INCLUDE) and not any(w in text for w in COLL_EXCLUDE):
             picks.append(c["handle"])
     return picks[:25]

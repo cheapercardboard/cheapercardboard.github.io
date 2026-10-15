@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Price history · Cheaper Cardboard</title>
+<style>
+  :root { --bg: #eef0f4; --surface: #ffffff; --ink: #1b2333; --mute: #596377; --line: #d5d9e2; --good: #167a3e; --bad: #b3261e; --focus: #2b5bff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #121826; --surface: #1b2336; --ink: #e9edf5; --mute: #9aa5bb; --line: #2e3850; --good: #5fd08a; --bad: #ff8a80; --focus: #8aa8ff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 0 1rem; }
+  :is(a, button, summary):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  a { color: inherit; font-weight: 600; text-underline-offset: 3px; }
+
+  .top { padding: 1.25rem 0 0; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .back { display: inline-flex; align-items: center; gap: .5rem; text-decoration: none; }
+  .back::before { content: ""; width: .5rem; height: .5rem; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
+  .back:hover { text-decoration: underline; }
+  .site { font: 900 1.05rem/1 "Arial Black", "Helvetica Neue", Arial, system-ui, sans-serif; letter-spacing: -.02em; }
+  #notice { margin: 1rem 0 0; padding: .6rem .8rem; border: 1px solid var(--good); color: var(--good); font-weight: 600; }
+
+  .head { padding: 1.5rem 0 1.25rem; }
+  .set { margin: 0; color: var(--mute); }
+  h1 { margin: .15rem 0 0; font: 900 clamp(1.7rem, 5.5vw, 2.6rem)/1.05 "Arial Black", "Helvetica Neue", Arial, system-ui, sans-serif; letter-spacing: -.03em; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); }
+  .summary { display: grid; grid-template-columns: 1.4fr 1fr 1fr; }
+  .summary > div { padding: 1.1rem 1.25rem; }
+  .summary > div + div { border-left: 1px solid var(--line); }
+  .label { margin: 0; color: var(--mute); font-size: .92rem; }
+  .big { margin: .1rem 0 0; font-size: 2.4rem; line-height: 1.1; font-weight: 800; color: var(--good); font-variant-numeric: tabular-nums; }
+  .mid { margin: .1rem 0 0; font-size: 1.5rem; line-height: 1.2; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sub { margin: .2rem 0 0; color: var(--mute); }
+  .down { color: var(--bad); } .up { color: var(--good); }
+  .go { display: inline-block; margin-top: .6rem; padding: .45rem .8rem; border: 1px solid var(--ink); text-decoration: none; }
+  .go:hover { background: var(--ink); color: var(--surface); }
+
+  section.block { margin-top: 1.25rem; }
+  .block > header { display: flex; justify-content: space-between; align-items: center; gap: .75rem 1.5rem; flex-wrap: wrap; padding: 1rem 1.25rem .25rem; }
+  h2 { margin: 0; font-size: 1.2rem; }
+  .range { display: inline-flex; }
+  .range button { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--ink); padding: .4rem .9rem; cursor: pointer; border-radius: 0; }
+  .range button + button { border-left: 0; }
+  .range button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .legend { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; padding: 0 1.25rem; color: var(--mute); font-size: .92rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .legend i { width: 1.4rem; height: 0; border-top: 3px solid var(--good); }
+  .legend i.dash { border-top: 2px dashed var(--mute); }
+  .chart { position: relative; padding: .5rem 1rem 1rem; }
+  svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+  svg text { fill: var(--mute); font: 12px system-ui, sans-serif; }
+  .grid { stroke: var(--line); stroke-width: 1; }
+  .l-low { fill: none; stroke: var(--good); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+  .l-mkt { fill: none; stroke: var(--mute); stroke-width: 2; stroke-dasharray: 6 5; }
+  .dot { fill: var(--good); stroke: var(--surface); stroke-width: 2; }
+  .guide { stroke: var(--ink); stroke-width: 1; }
+  #tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--surface); padding: .35rem .6rem; font-size: .9rem; white-space: nowrap; transform: translate(-50%, -110%); }
+  #tip[hidden] { display: none; }
+  .none { padding: 2rem 1.25rem; color: var(--mute); }
+  details.daily { border-top: 1px solid var(--line); }
+  details.daily > summary { cursor: pointer; padding: .8rem 1.25rem; font-weight: 600; }
+  .scroll { overflow-x: auto; padding: 0 1.25rem 1rem; max-height: 22rem; overflow-y: auto; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-weight: 600; font-size: .9rem; color: var(--mute); padding: .3rem .8rem .3rem 0; border-bottom: 1px solid var(--line); }
+  td { padding: .55rem .8rem .55rem 0; border-bottom: 1px solid var(--line); }
+  td.num { font-variant-numeric: tabular-nums; font-weight: 700; }
+  tr.best td.num { color: var(--good); }
+  tr.out td { color: var(--mute); } tr.out td.num { text-decoration: line-through; font-weight: 500; }
+  .tablewrap { overflow-x: auto; padding: 0 1.25rem 1rem; }
+  footer { max-width: 60rem; margin: 2rem auto 3rem; padding: 0 1rem; color: var(--mute); font-size: .92rem; }
+  footer p { margin: 0 0 .6rem; }
+  @media (max-width: 40rem) {
+    .summary { grid-template-columns: 1fr 1fr; }
+    .summary > div:first-child { grid-column: 1 / -1; }
+    .summary > div:nth-child(2) { border-left: 0; border-top: 1px solid var(--line); }
+    .summary > div:nth-child(3) { border-top: 1px solid var(--line); }
+    .big { font-size: 2.1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" id="back" href="../index.html">All products</a><span class="site">Cheaper Cardboard</span></div>
+  <p id="notice" hidden>Sample data only. This is a made-up product with invented prices.</p>
+  <div class="head"><p class="set" id="set"></p><h1 id="name"></h1></div>
+
+  <div class="panel summary" id="summary"></div>
+
+  <section class="panel block">
+    <header><h2>Price history</h2>
+      <div class="range" role="group" aria-label="Time range">
+        <button type="button" data-days="7" aria-pressed="false">7 days</button>
+        <button type="button" data-days="30" aria-pressed="true">30 days</button>
+      </div></header>
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="chart"></div>
+    <details class="daily"><summary>See the daily prices</summary><div class="scroll" id="daily"></div></details>
+  </section>
+
+  <section class="panel block">
+    <header><h2>Stores</h2></header>
+    <div class="tablewrap" id="stores"></div>
+  </section>
+</div>
+<footer>
+  <p id="note"></p>
+  <p>No trackers, no accounts, no ads, made for the community. Not affiliated with any store or Wizards of the Coast. Prices may be out of date, so check the store's page before you buy.</p>
+</footer>
+
+<script>
+window.PRODUCT = {"name":"Outlaws of Thunder Junction Commander Deck - Most Wanted","type":"Commander Deck","set":"Outlaws of Thunder Junction","released":"2024-04-19","note":"The line is the cheapest in-stock price across the stores we track, checked twice a day and saved once a day. A product's history starts the first day we collect it.","history":[{"d":"2026-10-15","low":null}],"offers":[{"store":"Accidentally Cool Games","price":43.66,"in_stock":false,"url":"https://accidentallycoolgames.com/products/mtg-outlaws-of-thunder-junction-commander-deck-most-wanted"}]};
+</script>
+<script>
+(function () {
+  var P = window.PRODUCT; if (!P) return;
+  var W = 720, H = 300, L = 54, R = 16, T = 14, B = 30, NS = "http://www.w3.org/2000/svg", range = 30;
+  function el(tag, text, cls) { var e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; }
+  function money(n) { return "$" + Number(n).toFixed(2); }
+  function day(s) { return new Date(s + "T00:00:00"); }
+  function fmt(s, long) { return day(s).toLocaleDateString(undefined, long ? { month: "long", day: "numeric", year: "numeric" } : { month: "short", day: "numeric" }); }
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : null; }
+
+  if (P.sample) document.getElementById("notice").hidden = false;
+  if (P.back) document.getElementById("back").href = P.back;
+  document.title = P.name + " price history · Cheaper Cardboard";
+  document.getElementById("name").textContent = P.name;
+  var rel = P.released ? " Released " + fmt(P.released, true) : "";
+  document.getElementById("set").textContent = (P.set ? P.set + "." : "") + rel;
+  document.getElementById("note").textContent = P.note || "";
+
+  var H_ = (P.history || []).slice().sort(function (a, b) { return a.d < b.d ? -1 : 1; });
+  var offers = P.offers.slice().sort(function (a, b) { return a.in_stock !== b.in_stock ? (a.in_stock ? -1 : 1) : a.price - b.price; });
+  var best = offers[0], hasMarket = H_.some(function (h) { return h.market != null; });
+
+  // ---- summary ----
+  function changeOver(days) {
+    var pts = H_.filter(function (h) { return h.low != null; }); if (pts.length < 2) return null;
+    var last = pts[pts.length - 1], cut = new Date(day(last.d).getTime() - days * 864e5), base = null;
+    pts.forEach(function (h) { if (day(h.d) <= cut) base = h; });
+    if (!base) base = pts[0]; if (base === last) return null;
+    return { abs: last.low - base.low, pct: (last.low - base.low) / base.low * 100 };
+  }
+  function changeBlock(label, days) {
+    var d = el("div"), c = changeOver(days);
+    d.appendChild(el("p", label, "label"));
+    if (!c) { d.appendChild(el("p", "Not enough history yet", "sub")); return d; }
+    var sign = c.abs < 0 ? "\u2212" : "+", cls = c.abs < 0 ? "down" : (c.abs > 0 ? "up" : "");
+    d.appendChild(el("p", sign + money(Math.abs(c.abs)), "mid " + cls));
+    d.appendChild(el("p", sign + Math.abs(c.pct).toFixed(1) + "%", "sub " + cls));
+    return d;
+  }
+  var sum = document.getElementById("summary"), first = el("div");
+  first.appendChild(el("p", best.in_stock ? "Lowest price in stock" : "Currently sold out", "label"));
+  if (best.in_stock) {
+    first.appendChild(el("p", money(best.price), "big"));
+    first.appendChild(el("p", "at " + best.store, "sub"));
+    var href = safeUrl(best.url);
+    if (href) { var a = el("a", "Open store page", "go"); a.href = href; a.rel = "noopener"; a.target = "_blank"; first.appendChild(a); }
+  } else { first.appendChild(el("p", "No store has it in stock", "mid")); }
+  sum.appendChild(first); sum.appendChild(changeBlock("Change over 7 days", 7)); sum.appendChild(changeBlock("Change over 30 days", 30));
+
+  // ---- chart ----
+  var chartBox = document.getElementById("chart"), tip = el("div"); tip.id = "tip"; tip.hidden = true;
+  function shown() {
+    if (!H_.length) return [];
+    var last = day(H_[H_.length - 1].d), cut = new Date(last.getTime() - (range - 1) * 864e5);
+    return H_.filter(function (h) { return day(h.d) >= cut; });
+  }
+  function svg(tag, attrs) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function draw() {
+    chartBox.textContent = ""; var pts = shown();
+    var vals = []; pts.forEach(function (h) { if (h.low != null) vals.push(h.low); if (h.market != null) vals.push(h.market); });
+    if (vals.length < 2 || pts.length < 2) { chartBox.appendChild(el("p", "The chart needs at least two days of prices. History starts the first day we collect this product, so check back tomorrow.", "none")); return; }
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), pad = (hi - lo) * 0.15 || 1; lo -= pad; hi += pad;
+    var t0 = day(pts[0].d).getTime(), t1 = day(pts[pts.length - 1].d).getTime();
+    function X(s) { return L + (day(s).getTime() - t0) / (t1 - t0) * (W - L - R); }
+    function Y(v) { return T + (1 - (v - lo) / (hi - lo)) * (H - T - B); }
+    var s = svg("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Line chart of the lowest price over the last " + range + " days, from " + money(pts[0].low != null ? pts[0].low : vals[0]) + " to " + money(best.price) });
+    for (var i = 0; i < 4; i++) {
+      var v = lo + (hi - lo) * i / 3, y = Y(v);
+      s.appendChild(svg("line", { x1: L, x2: W - R, y1: y, y2: y, "class": "grid" }));
+      var tx = svg("text", { x: L - 8, y: y + 4, "text-anchor": "end" }); tx.textContent = "$" + (hi - lo > 8 ? v.toFixed(0) : v.toFixed(2)); s.appendChild(tx);
+    }
+    [pts[0], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]].forEach(function (p, k) {
+      var tx = svg("text", { x: X(p.d), y: H - 8, "text-anchor": k === 0 ? "start" : (k === 2 ? "end" : "middle") }); tx.textContent = fmt(p.d); s.appendChild(tx);
+    });
+    function line(key, cls) {
+      var dpath = "", pen = false;
+      pts.forEach(function (p) { if (p[key] == null) { pen = false; return; } dpath += (pen ? "L" : "M") + X(p.d).toFixed(1) + " " + Y(p[key]).toFixed(1) + " "; pen = true; });
+      if (dpath) s.appendChild(svg("path", { d: dpath, "class": cls }));
+    }
+    if (hasMarket) line("market", "l-mkt"); line("low", "l-low");
+    var lastLow = pts.filter(function (p) { return p.low != null; }).pop();
+    if (lastLow) s.appendChild(svg("circle", { cx: X(lastLow.d), cy: Y(lastLow.low), r: 5, "class": "dot" }));
+    var guide = svg("line", { y1: T, y2: H - B, "class": "guide", visibility: "hidden" }), hov = svg("circle", { r: 5, "class": "dot", visibility: "hidden" });
+    s.appendChild(guide); s.appendChild(hov);
+    function move(e) {
+      var r = s.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, near = null, bd = 1e9;
+      pts.forEach(function (p) { var dx = Math.abs(X(p.d) - x); if (p.low != null && dx < bd) { bd = dx; near = p; } });
+      if (!near) return;
+      guide.setAttribute("x1", X(near.d)); guide.setAttribute("x2", X(near.d)); guide.setAttribute("visibility", "visible");
+      hov.setAttribute("cx", X(near.d)); hov.setAttribute("cy", Y(near.low)); hov.setAttribute("visibility", "visible");
+      tip.textContent = fmt(near.d) + ": " + money(near.low) + (near.market != null ? "  (market " + money(near.market) + ")" : "");
+      tip.style.left = (X(near.d) / W * r.width + s.getBoundingClientRect().left - chartBox.getBoundingClientRect().left) + "px";
+      tip.style.top = (Y(near.low) / H * r.height + 8) + "px"; tip.hidden = false;
+    }
+    s.addEventListener("pointermove", move); s.addEventListener("pointerdown", move);
+    s.addEventListener("pointerleave", function () { guide.setAttribute("visibility", "hidden"); hov.setAttribute("visibility", "hidden"); tip.hidden = true; });
+    chartBox.appendChild(s); chartBox.appendChild(tip);
+  }
+  var legend = document.getElementById("legend"), l1 = el("span"); l1.appendChild(el("i")); l1.appendChild(document.createTextNode("Lowest in-stock price across stores")); legend.appendChild(l1);
+  if (hasMarket) { var l2 = el("span"), i2 = el("i"); i2.className = "dash"; l2.appendChild(i2); l2.appendChild(document.createTextNode("TCGplayer market price")); legend.appendChild(l2); }
+  Array.prototype.forEach.call(document.querySelectorAll(".range button"), function (b) {
+    b.addEventListener("click", function () {
+      range = +b.getAttribute("data-days");
+      Array.prototype.forEach.call(document.querySelectorAll(".range button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      draw();
+    });
+  });
+  draw();
+
+  // ---- daily table and stores ----
+  var dt = el("table"), dh = el("tr"); ["Date", "Lowest price"].concat(hasMarket ? ["Market price"] : []).forEach(function (h) { dh.appendChild(el("th", h)); }); dt.appendChild(dh);
+  H_.slice().reverse().forEach(function (h) {
+    var tr = el("tr"); tr.appendChild(el("td", fmt(h.d, true)));
+    tr.appendChild(el("td", h.low != null ? money(h.low) : "Sold out or not listed", "num"));
+    if (hasMarket) tr.appendChild(el("td", h.market != null ? money(h.market) : "", "num"));
+    dt.appendChild(tr);
+  });
+  document.getElementById("daily").appendChild(dt);
+
+  var st = el("table"), sh = el("tr"); ["Store", "Price", "Stock", "Store page"].forEach(function (h) { sh.appendChild(el("th", h)); }); st.appendChild(sh);
+  offers.forEach(function (o, i) {
+    var tr = el("tr", undefined, !o.in_stock ? "out" : (i === 0 ? "best" : ""));
+    tr.appendChild(el("td", o.store)); tr.appendChild(el("td", money(o.price), "num")); tr.appendChild(el("td", o.in_stock ? "In stock" : "Sold out"));
+    var c = el("td"), u = safeUrl(o.url); if (u) { var a2 = el("a", "Open"); a2.href = u; a2.rel = "noopener"; a2.target = "_blank"; c.appendChild(a2); }
+    tr.appendChild(c); st.appendChild(tr);
+  });
+  document.getElementById("stores").appendChild(st);
+})();
+</script>
+</body>
+</html>
