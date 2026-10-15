@@ -1,0 +1,48 @@
+name: Publish site
+
+# This workflow only PUBLISHES the site. It never contacts a store.
+# You collect prices on your own computer (update-and-publish.bat) and push site/data.js
+# and data/history.json; this builds the product pages from them and puts the site online.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "site/**"
+      - "data/**"
+      - "collect_prices.py"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Check the website files are in the repository
+        run: test -f site/index.html && test -f site/product-template.html && test -f site/data.js || (echo "A file in the site folder is missing (index.html, product-template.html or data.js). See README." && exit 1)
+      - name: Build the product pages
+        run: python collect_prices.py --pages-only
+      - name: Safety check (never publish an empty site)
+        run: python -c "import json,sys; t=open('site/data.js',encoding='utf-8').read(); n=len(json.loads(t.split('window.PRICES = ',1)[1].rsplit(';',1)[0])['products']); print(n,'products'); sys.exit(0 if n>=200 else 1)"
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
