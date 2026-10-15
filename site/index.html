@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Cheaper Cardboard · MTG Sealed Prices</title>
+<style>
+  :root {
+    --bg: #eef0f4; --surface: #ffffff; --ink: #1b2333; --mute: #596377; --line: #d5d9e2;
+    --good: #167a3e; --focus: #2b5bff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121826; --surface: #1b2336; --ink: #e9edf5; --mute: #9aa5bb; --line: #2e3850; --good: #5fd08a; --focus: #8aa8ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 0 1rem; }
+
+  .mast { padding: 2.25rem 0 1.5rem; }
+  .brand { display: flex; align-items: center; gap: 1rem; }
+  .brand svg { width: 3.4rem; height: 3.4rem; flex: none; }
+  h1 { margin: 0; font: 900 clamp(2.1rem, 7vw, 3.6rem)/0.95 "Arial Black", "Helvetica Neue", Arial, system-ui, sans-serif; letter-spacing: -0.035em; }
+  .tagline { margin: .75rem 0 0; font-size: 1.15rem; }
+  .stats { margin: .2rem 0 0; color: var(--mute); }
+  #notice { margin: 1rem 0 0; padding: .6rem .8rem; border: 1px solid var(--good); color: var(--good); font-weight: 600; }
+
+  .toolbar { position: sticky; top: 0; z-index: 5; background: var(--surface); border-block: 1px solid var(--line); }
+  .toolbar .wrap { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; padding-block: .7rem; }
+  #q { flex: 1 1 16rem; }
+  input[type=search], select, button { font: inherit; color: inherit; border: 1px solid var(--ink); background: var(--surface); border-radius: 0; padding: .5rem .7rem; }
+  button { cursor: pointer; }
+  button:hover { background: var(--ink); color: var(--surface); }
+  label.check { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
+  input[type=checkbox] { width: 1.15rem; height: 1.15rem; accent-color: var(--ink); margin: 0; }
+  :is(summary, button, input, select, a):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  main { max-width: 60rem; margin: 1.25rem auto 0; background: var(--surface); border: 1px solid var(--line); }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: ""; flex: none; width: .5rem; height: .5rem; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); margin-right: .15rem; transition: transform .15s; }
+  details[open] > summary::before { transform: rotate(45deg); }
+
+  details.set > summary { display: flex; align-items: center; gap: .8rem; padding: .95rem 1rem; background: var(--bg); border-top: 1px solid var(--line); }
+  main > details.set:first-child > summary { border-top: 0; }
+  .title { flex: 1; min-width: 0; }
+  .title b { display: block; font-size: 1.2rem; line-height: 1.2; }
+  .title small { color: var(--mute); }
+  .count { color: var(--mute); }
+
+  details.prod { border-top: 1px solid var(--line); }
+  details.prod > summary { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; padding: .8rem 1rem; }
+  details.prod > summary:hover { background: var(--bg); }
+  .pname { flex: 1 1 14rem; min-width: 0; }
+  .pname b { display: block; font-weight: 650; }
+  .pname small { color: var(--mute); }
+  .tag { flex: none; color: var(--good); font-weight: 800; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+  .soldout { color: var(--mute); }
+
+  .more { margin: 0; padding: .1rem 1rem .6rem 2.45rem; }
+  .table-wrap { overflow-x: auto; padding: 0 1rem 1rem 2.45rem; }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-weight: 600; font-size: .9rem; color: var(--mute); padding: .3rem .8rem .3rem 0; border-bottom: 1px solid var(--line); }
+  td { padding: .55rem .8rem .55rem 0; border-bottom: 1px solid var(--line); }
+  td.price { font-weight: 700; font-variant-numeric: tabular-nums; }
+  tr.best td.price { color: var(--good); }
+  tr.out td { color: var(--mute); }
+  tr.out td.price { text-decoration: line-through; font-weight: 500; }
+  a { color: inherit; font-weight: 600; text-underline-offset: 3px; }
+  .empty { padding: 2rem 1rem; color: var(--mute); }
+
+  footer { max-width: 60rem; margin: 2rem auto 3rem; padding: 0 1rem; color: var(--mute); font-size: .92rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="mast"><div class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 42 13 24 22 6 13Z" fill="#e3bb80"/><path d="M6 13 24 22V44L6 35Z" fill="#bd8c52"/><path d="M42 13 24 22V44L42 35Z" fill="#a47843"/><path d="M24 22V44" stroke="#2f9e5f" stroke-width="3"/></svg>
+    <h1>Cheaper Cardboard</h1>
+  </div>
+  <p class="tagline">MTG sealed prices, side by side.</p>
+  <p class="stats" id="stats"></p>
+  <p id="notice" hidden>Sample data only. These are placeholder stores and prices, not real listings.</p>
+</div></header>
+
+<div class="toolbar"><div class="wrap">
+  <label for="q" hidden>Search</label>
+  <input id="q" type="search" placeholder="Search sets and products, like &quot;bloomburrow&quot; or &quot;commander&quot;">
+  <select id="type" aria-label="Product type"><option value="">All product types</option></select>
+  <label class="check"><input id="stock" type="checkbox" checked> In stock only</label>
+  <button id="open" type="button">Open all sets</button>
+  <button id="close" type="button">Close all sets</button>
+</div></div>
+
+<main id="list"></main>
+<footer>No trackers, no accounts, no ads, made for the community. Prices are collected automatically from each store's own website and link back to it. Not affiliated with any store or Wizards of the Coast. Prices may be out of date, so check the store's page before you buy.</footer>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  var data = window.PRICES || { products: [] };
+  var list = document.getElementById("list"), q = document.getElementById("q");
+  var typeSel = document.getElementById("type"), stockOnly = document.getElementById("stock");
+
+  var stores = {};
+  data.products.forEach(function (p) { p.offers.forEach(function (o) { stores[o.store] = 1; }); });
+  var when = new Date((data.updated || "") + "T00:00:00");
+  var whenText = isNaN(when) ? data.updated : when.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+  document.getElementById("stats").textContent = data.products.length.toLocaleString() + " products from " +
+    Object.keys(stores).length.toLocaleString() + " stores" + (whenText ? ". Updated " + whenText + "." : ".");
+  if (data.sample) document.getElementById("notice").hidden = false;
+
+  var types = {};
+  data.products.forEach(function (p) { if (p.type) types[p.type] = 1; });
+  Object.keys(types).sort().forEach(function (t) {
+    var o = document.createElement("option"); o.value = t; o.textContent = t; typeSel.appendChild(o);
+  });
+
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : null; }
+  function el(tag, text, cls) { var e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; }
+  function money(n) { return "$" + Number(n).toFixed(2); }
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
+  function sortOffers(a) { return a.slice().sort(function (x, y) { return x.in_stock !== y.in_stock ? (x.in_stock ? -1 : 1) : x.price - y.price; }); }
+  function releasedText(r) {
+    var d = new Date((r || "") + "T00:00:00");
+    return isNaN(d) ? "" : "Released " + d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+
+  function productEl(p, offers) {
+    var d = el("details", undefined, "prod"), s = el("summary"), top = offers[0];
+    var n = el("div", undefined, "pname");
+    n.appendChild(el("b", p.name));
+    n.appendChild(el("small", top.in_stock
+      ? "Lowest at " + top.store + (offers.length > 1 ? " and " + plural(offers.length - 1, "other store") : "")
+      : "Out of stock at all " + plural(offers.length, "store")));
+    s.appendChild(n);
+    s.appendChild(top.in_stock ? el("span", money(top.price), "tag") : el("span", "Sold out", "soldout"));
+    d.appendChild(s);
+    if (p.id) {
+      var more = el("p", undefined, "more"), pa = el("a", "See price history");
+      pa.href = "p/" + encodeURIComponent(p.id) + ".html"; more.appendChild(pa); d.appendChild(more);
+    }
+
+    var wrap = el("div", undefined, "table-wrap"), t = el("table"), head = el("tr");
+    ["Store", "Price", "Stock", "Store page"].forEach(function (h) { head.appendChild(el("th", h)); });
+    t.appendChild(head);
+    offers.forEach(function (o, i) {
+      var tr = el("tr", undefined, !o.in_stock ? "out" : (i === 0 ? "best" : ""));
+      tr.appendChild(el("td", o.store));
+      var price = el("td", undefined, "price"); price.appendChild(el("span", money(o.price))); tr.appendChild(price);
+      tr.appendChild(el("td", o.in_stock ? "In stock" : "Sold out"));
+      var cell = el("td"), href = safeUrl(o.url);
+      if (href) { var a = el("a", "Open"); a.href = href; a.rel = "noopener"; a.target = "_blank"; cell.appendChild(a); }
+      tr.appendChild(cell); t.appendChild(tr);
+    });
+    wrap.appendChild(t); d.appendChild(wrap);
+    return d;
+  }
+
+  function render() {
+    list.textContent = "";
+    var words = q.value.toLowerCase().split(/\s+/).filter(Boolean), type = typeSel.value, groups = {}, shown = 0;
+    data.products.forEach(function (p) {
+      var hay = (p.name + " " + (p.set || "")).toLowerCase();
+      if (!words.every(function (w) { return hay.indexOf(w) !== -1; })) return;
+      if (type && p.type !== type) return;
+      var offers = sortOffers(p.offers);
+      if (stockOnly.checked) offers = offers.filter(function (o) { return o.in_stock; });
+      if (!offers.length) return;
+      var key = p.set || "Other";
+      (groups[key] = groups[key] || { released: p.released || "", items: [] }).items.push([p, offers]);
+      shown++;
+    });
+    var keys = Object.keys(groups).sort(function (a, b) {
+      if (a === "Other") return 1; if (b === "Other") return -1;
+      return groups[b].released < groups[a].released ? -1 : groups[b].released > groups[a].released ? 1 : 0;
+    });
+    keys.forEach(function (k, i) {
+      var g = groups[k], d = el("details", undefined, "set"), s = el("summary"), t = el("div", undefined, "title");
+      d.open = words.length > 0 || i < 2;
+      t.appendChild(el("b", k));
+      var rel = releasedText(g.released);
+      if (rel) t.appendChild(el("small", rel));
+      s.appendChild(t);
+      s.appendChild(el("span", plural(g.items.length, "product"), "count"));
+      d.appendChild(s);
+      g.items.forEach(function (it) { d.appendChild(productEl(it[0], it[1])); });
+      list.appendChild(d);
+    });
+    if (!shown) list.appendChild(el("p", "Nothing matches. Try clearing the search or turning off the in-stock filter.", "empty"));
+  }
+
+  function setAll(open) { Array.prototype.forEach.call(list.querySelectorAll("details.set"), function (d) { d.open = open; }); }
+  q.addEventListener("input", render); typeSel.addEventListener("change", render); stockOnly.addEventListener("change", render);
+  document.getElementById("open").addEventListener("click", function () { setAll(true); });
+  document.getElementById("close").addEventListener("click", function () { setAll(false); });
+  render();
+})();
+</script>
+</body>
+</html>

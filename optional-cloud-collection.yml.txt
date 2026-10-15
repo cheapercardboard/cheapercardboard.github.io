@@ -1,0 +1,120 @@
+name: Update prices
+
+on:
+  schedule:
+    - cron: "17 5,17 * * *"   # twice a day (UTC)
+  workflow_dispatch:           # lets you press "Run workflow" by hand
+    inputs:
+      quick:
+        description: "Quick test: check 8 well-known stores and publish (about 10 minutes)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install certifi
+      - name: Collect this shard of stores
+        if: ${{ !inputs.quick || matrix.shard == 0 }}
+        run: |
+          if [ "${{ inputs.quick }}" = "true" ]; then
+            python collect_prices.py --all --refresh-hours 0 --stores "Many Realms,Flipside,GuuBuu,Mojobreak,CardPop,Hyperion,Common Lands,7th Dimension" --no-build
+          else
+            python collect_prices.py --all --refresh-hours 0 --shard ${{ matrix.shard }}/12 --no-build
+          fi
+        env:
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cache-${{ matrix.shard }}
+          path: cache
+          if-no-files-found: ignore
+
+  build:
+    needs: collect
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # lets this job save data/history.json back to the repository
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install certifi
+      - name: Check the website file is in the repository
+        run: test -f site/index.html && test -f site/product-template.html || (echo "site/index.html or site/product-template.html is missing from the repository. Upload the site folder (see README step 2)." && exit 1)
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cache-*
+          path: cache
+          merge-multiple: true
+      - name: Build the website data
+        run: python collect_prices.py --rebuild
+        env:
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+      - name: Show what was collected
+        if: always()
+        run: |
+          echo "Saved store files received from the collection jobs: $(ls cache 2>/dev/null | wc -l)"
+          python - <<'PY'
+          import csv
+          try:
+              rows = list(csv.DictReader(open("store_report.csv", encoding="utf-8")))
+          except Exception as e:
+              print("No store_report.csv was made:", e)
+              rows = []
+          print("Stores in the report:", len(rows))
+          for r in rows[:40]:
+              print(r["store"][:28].ljust(28), r["method"][:11].ljust(11), "read", r["products_seen"], "| sealed candidates", r["sealed_candidates"], "| kept", r["kept"], "|", r["error"])
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: |
+            store_report.csv
+            dropped_listings.csv
+            suspicious_prices.csv
+            assumed_matches.csv
+            watchlist_report.csv
+          if-no-files-found: ignore
+      - name: Safety check (never publish an empty site)
+        run: python -c "import json,sys; t=open('site/data.js',encoding='utf-8').read(); n=len(json.loads(t.split('window.PRICES = ',1)[1].rsplit(';',1)[0])['products']); print(n,'products'); sys.exit(0 if n>=int(sys.argv[1]) else 1)" ${{ inputs.quick && '1' || '200' }}
+      - name: Save the price history
+        if: ${{ !inputs.quick }}
+        run: |
+          git config user.name "price-bot"
+          git config user.email "price-bot@users.noreply.github.com"
+          git add data/history.json
+          git diff --cached --quiet || (git commit -m "Update price history" && git push)
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
