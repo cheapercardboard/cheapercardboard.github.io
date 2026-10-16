@@ -424,6 +424,22 @@ def cache_path(site):
     return os.path.join(CACHE_DIR, urllib.parse.urlparse(site).netloc.replace(":", "_") + ".json")
 
 
+def smart_hours(site, base):
+    """How long saved data for this store stays good in --smart mode."""
+    try:
+        with open(cache_path(site), encoding="utf-8") as f:
+            c = json.load(f)
+    except Exception:
+        return base
+    if c.get("error"):
+        return 0  # retry stores that failed
+    if not c.get("raw"):
+        return 24 * 7  # nothing sealed last time: check weekly
+    if c.get("capped") and c.get("method") == "full catalog":
+        return 48  # huge catalog read the slow way: every other day
+    return 20  # normal store: daily
+
+
 def cache_is_fresh(site, hours):
     p = cache_path(site)
     if not os.path.exists(p) or time.time() - os.path.getmtime(p) > hours * 3600:
@@ -828,6 +844,7 @@ def main():
     ap.add_argument("--refresh-hours", type=float, default=12)
     ap.add_argument("--out", default=os.path.join("site", "data.js"))
     ap.add_argument("--shard", default="", help="i/N: only do every Nth store (used by the GitHub workflow)")
+    ap.add_argument("--smart", action="store_true", help="refresh normal stores daily, huge-catalog stores every 2 days, and stores with no sealed Magic product weekly")
     ap.add_argument("--stores", default="", help='only stores whose name contains one of these words, e.g. "Many Realms,Flipside"')
     ap.add_argument("--pages-only", action="store_true", help="only make the product pages from site/data.js and data/history.json (no store requests)")
     ap.add_argument("--no-build", action="store_true", help="collect only; do not write the website data")
@@ -880,8 +897,9 @@ def main():
         try:
             for n, s in enumerate(stores, 1):
                 site, name = s["website"], s["name"]
-                if cache_is_fresh(site, args.refresh_hours):
-                    print(f"[{n}/{len(stores)}] {name}: recent data saved, skipping")
+                hours = smart_hours(site, args.refresh_hours) if args.smart else args.refresh_hours
+                if cache_is_fresh(site, hours):
+                    print(f"[{n}/{len(stores)}] {name}: saved data is recent enough, skipping" + (" (smart)" if args.smart else ""))
                     continue
                 rec = {"v": CACHE_VERSION, "store": name, "site": site, "fetched": today, "raw": []}
                 try:

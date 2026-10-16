@@ -14,7 +14,7 @@ echo "=== Getting the latest from GitHub ==="
 git pull --rebase --autostash || fail
 
 echo "=== Collecting prices (this takes a while; the Mac is kept awake) ==="
-caffeinate -i python3 collect_prices.py --all --refresh-hours 0 || fail
+caffeinate -i python3 collect_prices.py --all --smart || fail
 
 echo "=== Sending the new prices to GitHub ==="
 git add site/data.js data/history.json

@@ -8,7 +8,7 @@ git pull --rebase --autostash
 if errorlevel 1 goto :fail
 
 echo === Collecting prices (this takes a while) ===
-py -3 collect_prices.py --all --refresh-hours 0
+py -3 collect_prices.py --all --smart
 if errorlevel 1 goto :fail
 
 echo === Sending the new prices to GitHub ===
